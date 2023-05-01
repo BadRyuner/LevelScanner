@@ -8,7 +8,7 @@ namespace LevelScanner
 		public override string HarmonyIdentifier() => "BadRyuner.LevelScanner";
 		public override string Author => "Badryuner";
 		public override string Name => "Level Scanner";
-		public override string Version => "1.0";
+		public override string Version => "1.1";
 
 		public Mod()
 		{
