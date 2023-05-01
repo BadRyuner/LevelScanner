@@ -56,6 +56,10 @@
       <HintPath>..\..\Steam\steamapps\common\PULSARLostColony\PubliManaged\UnityEngine.CoreModule.dll</HintPath>
       <Private>False</Private>
     </Reference>
+    <Reference Include="UnityEngine.IMGUIModule">
+      <HintPath>..\..\Steam\steamapps\common\PULSARLostColony\PubliManaged\UnityEngine.IMGUIModule.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
     <Reference Include="UnityEngine.ParticleSystemModule">
       <HintPath>..\..\Steam\steamapps\common\PULSARLostColony\PubliManaged\UnityEngine.ParticleSystemModule.dll</HintPath>
       <Private>False</Private>
@@ -73,9 +77,9 @@
     <Compile Include="Command.cs" />
     <Compile Include="NewScanner.cs" />
     <Compile Include="PatchScanner.cs" />
-    <Compile Include="MeshTarget.cs" />
     <Compile Include="Mod.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Settings.cs" />
   </ItemGroup>
   <ItemGroup>
     <WCFMetadata Include="Connected Services\" />

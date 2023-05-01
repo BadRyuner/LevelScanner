@@ -25,18 +25,7 @@ namespace LevelScanner
 			{
 				__instance.ZoomText.text = "";
 			}
-			string text = "[ff0000](*) HOSTILE[-]\n[00ff00](*) CREW[-]\n[ffffff](*) NPC[-]\n[6666ff](*) DOOR[-]\n[ff00ff](*) TELEPORTER[-]";
-			if (PLNetworkManager.Instance.ViewedPawn != null && PLNetworkManager.Instance.ViewedPawn.MyPlayer != null)
-			{
-				if (PLNetworkManager.Instance.ViewedPawn.MyPlayer.Talents[34] > 0)
-				{
-					text += "\n[FFFF00](*) PICKUPS[-]";
-				}
-				if (PLNetworkManager.Instance.ViewedPawn.MyPlayer.Talents[33] > 0)
-				{
-					text += "\n[44FFFF](*) RESEARCH MATS[-]";
-				}
-			}
+			
 			if (PLNetworkManager.Instance.ViewedPawn != null && PLNetworkManager.Instance.ViewedPawn.GetPlayer() != null && PLNetworkManager.Instance.ViewedPawn.GetPlayer().MyInventory != null && PLNetworkManager.Instance.ViewedPawn.GetPlayer().MyInventory.ActiveItem != null && PLNetworkManager.Instance.ViewedPawn.GetPlayer().MyInventory.ActiveItem.PawnItemType == EPawnItemType.E_SCANNER)
 			{
 				__instance.TargetInfoLabel.enabled = true;
@@ -45,7 +34,6 @@ namespace LevelScanner
 			{
 				__instance.TargetInfoLabel.enabled = false;
 			}
-			PLGlobal.SafeLabelSetText(__instance.TargetInfoLabel, text);
 			if (PLNetworkManager.Instance.ViewedPawn != null && NewScanner.ActiveScanner != null)
 			{
 				var num = NewScanner.ActiveScanner.ZoomLevel;
@@ -54,6 +42,19 @@ namespace LevelScanner
 				{
 					__instance.LastBlipTime = Time.time;
 					PLMusic.PostEvent("play_sx_player_item_scanner_blip", PLNetworkManager.Instance.ViewedPawn.gameObject);
+					string text = $"[{NewScanner.hostilehex}](*) HOSTILE[-]\n[{NewScanner.crewhex}](*) CREW[-]\n[{NewScanner.npchex}](*) NPC[-]\n[{NewScanner.doorhex}](*) DOOR[-]\n[{NewScanner.teleporterhex}](*) TELEPORTER[-]";
+					if (PLNetworkManager.Instance.ViewedPawn != null && PLNetworkManager.Instance.ViewedPawn.MyPlayer != null)
+					{
+						if (PLNetworkManager.Instance.ViewedPawn.MyPlayer.Talents[34] > 0)
+						{
+							text += $"\n[{NewScanner.itemhex}](*) PICKUPS[-]";
+						}
+						if (PLNetworkManager.Instance.ViewedPawn.MyPlayer.Talents[33] > 0)
+						{
+							text += $"\n[{NewScanner.researchhex}](*) RESEARCH MATS[-]";
+						}
+						PLGlobal.SafeLabelSetText(__instance.TargetInfoLabel, text);
+					}
 				}
 				__instance.PingCircle.transform.localScale = Vector3.one * num2 * (float)(num + 1);
 				__instance.PingCircle.alpha = 0.5f * (0.5f - Mathf.Abs(0.5f - num2));

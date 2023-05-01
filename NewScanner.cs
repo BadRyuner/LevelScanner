@@ -4,6 +4,7 @@ using PulsarModLoader;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 using UnityEngine;
@@ -18,7 +19,27 @@ namespace LevelScanner
 		public static PLPawnItem_Scanner ActiveScanner;
 		public static Dictionary<int /* hub id */, Vector3[][]> meshes = new Dictionary<int, Vector3[][]>();
 
-		internal static SaveValue<bool> ShowInterior = new SaveValue<bool>("ShowInterior", false);
+		public static SaveValue<bool> ShowInterior = new SaveValue<bool>("ShowInterior", false);
+
+		public static SaveValue<string> interiorhex = new SaveValue<string>("InteriorHex", NGUIText.EncodeColor24(new Color32(135, 135, 135, 80)));
+		public static SaveValue<string> hostilehex = new SaveValue<string>("HostileHex", "ff0000");
+		public static SaveValue<string> crewhex = new SaveValue<string>("CrewHex", "00ff00");
+		public static SaveValue<string> npchex = new SaveValue<string>("NPCHex", "ffffff");
+		public static SaveValue<string> doorhex = new SaveValue<string>("DoorHex", "6666ff");
+		public static SaveValue<string> teleporterhex = new SaveValue<string>("TeleporterHex", "ff00ff");
+		public static SaveValue<string> itemhex = new SaveValue<string>("ItemHex", "FFFF00");
+		public static SaveValue<string> researchhex = new SaveValue<string>("ResearchHex", "44FFFF");
+		public static SaveValue<string> firehex = new SaveValue<string>("FireHex", "E26822");
+
+		public static Color _interior;
+		public static Color _hostile;
+		public static Color _crew;
+		public static Color _npc;
+		public static Color _door;
+		public static Color _teleporter;
+		public static Color _item;
+		public static Color _research;
+		public static Color _fire;
 
 		Material mat;
 		Camera cam;
@@ -33,9 +54,10 @@ namespace LevelScanner
 			mat.hideFlags = HideFlags.HideAndDontSave;
 			//mat.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
 			//mat.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
-			mat.SetInt("_Cull", (int)UnityEngine.Rendering.CullMode.Off);
+			//mat.SetInt("_Cull", (int)UnityEngine.Rendering.CullMode.Off);
 			mat.SetInt("_ZWrite", 0);
 			GameObject.DontDestroyOnLoad(mat);
+			Settings.UpdateColor();
 		}
 
 		void FixedUpdate()
@@ -53,6 +75,9 @@ namespace LevelScanner
 				}
 			}
 
+			if (PLNetworkManager.Instance.LocalPlayer == null && meshes.Count != 0)
+				meshes.Clear();
+
 			if (PLNetworkManager.Instance?.ViewedPawn != null)
 			{
 				PawnY = PLNetworkManager.Instance.ViewedPawn.transform.position.y;
@@ -61,6 +86,7 @@ namespace LevelScanner
 					MeshCollider[] targets;
 					var shipinfo = PLNetworkManager.Instance.LocalPlayer.MyCurrentTLI.MyShipInfo;
 					var astar = PLNetworkManager.Instance.LocalPlayer.MyCurrentTLI.OptionalPathNetwork;
+					var bso = PLNetworkManager.Instance.LocalPlayer.MyCurrentTLI.MyBSO;
 					if (shipinfo != null)
 					{
 						targets = shipinfo.InteriorStatic.GetComponentsInChildren<MeshCollider>();
@@ -68,6 +94,10 @@ namespace LevelScanner
 					else if (astar != null)
 					{
 						targets = astar.GetComponentsInChildren<MeshCollider>();
+					}
+					else if (bso != null)
+					{
+						targets = bso.GetComponentsInChildren<MeshCollider>();
 					}
 					else
 					{
@@ -84,7 +114,9 @@ namespace LevelScanner
 						Vector3[] vecs = new Vector3[verts.Length];
 
 						for(int i = 0; i < verts.Length; i++)
+						{
 							vecs[i] = v.transform.TransformPoint(verts[i]);
+						}
 
 						vectors[count] = vecs;
 						count++;
@@ -110,7 +142,7 @@ namespace LevelScanner
 			{
 				GL.Begin(GL.LINES);
 
-				GL.Color(new Color32(135, 135, 135, 80));
+				GL.Color(_interior);
 
 				if (meshes.TryGetValue(PLNetworkManager.Instance.LocalPlayer.SubHubID, out var floor))
 				{
@@ -122,9 +154,18 @@ namespace LevelScanner
 						for (int x = 1; x < obj.Length; x++)
 						{
 							var in3d = obj[x];
-							if (Mathf.Abs(in3d.y - PawnY) > 1.3f) continue;
-							GL.Vertex(new Vector3(last.x, last.z, 0) * zoom);
+							if (Mathf.Abs(in3d.y - PawnY) > 1.6f)
+							{
+								last.y = 0;
+								continue;
+							}
 							var now = scannerTransform.InverseTransformPoint(in3d);
+							if (last.y == 0) 
+							{
+								last = now;
+								continue;
+							}
+							GL.Vertex(new Vector3(last.x, last.z, 0) * zoom);
 							GL.Vertex(new Vector3(now.x, now.z, 0) * zoom);
 							last = now;
 						}
@@ -135,7 +176,7 @@ namespace LevelScanner
 			}
 			GL.Begin(GL.TRIANGLES);
 
-			var clr = Color.white;
+			var clr = _npc;
 
 			for(int i = 0; i < PLDialogueActorInstance.AllDialogueActorInstances.Count; i++)
 			{
@@ -167,6 +208,8 @@ namespace LevelScanner
 				}
 			}
 
+			clr = _hostile;
+
 			for (int i = 0; i < PLPlanetMine.AllPlanetMines.Count; i++)
 			{
 				var mine = PLPlanetMine.AllPlanetMines[i];
@@ -182,7 +225,7 @@ namespace LevelScanner
 				}
 			}
 
-			clr = new Color32(0x66, 0x66, 0xff, 255);
+			clr = _door;
 			GL.Color(clr);
 
 			for (int i = 0; i < PLInteriorDoor.AllInteriorDoors.Count; i++)
@@ -200,7 +243,7 @@ namespace LevelScanner
 				}
 			}
 
-			clr = new Color32(0xff, 0x00, 0xff, 255);
+			clr = _teleporter;
 			GL.Color(clr);
 
 			foreach (PLScreenHubBase plscreenHubBase in PLScreenHubBase.GetAllScreenHubs())
@@ -222,7 +265,7 @@ namespace LevelScanner
 			var pickups = PLGameStatic.Instance.m_AllPickupObjects;
 			if (PLNetworkManager.Instance.ViewedPawn.MyPlayer.Talents[34] > 0)
 			{
-				clr = new Color32(0xff, 0xff, 0, 255);
+				clr = _item;
 				GL.Color(clr);
 				
 				for (int i = 0; i < pickups.Count; i++)
@@ -277,7 +320,7 @@ namespace LevelScanner
 
 			if (PLNetworkManager.Instance.ViewedPawn.MyPlayer.Talents[33] > 0)
 			{
-				clr = new Color32(0x44, 0xff, 0xff, 255);
+				clr = _research;
 				GL.Color(clr);
 
 				for (int i = 0; i < pickups.Count; i++)
@@ -296,7 +339,7 @@ namespace LevelScanner
 				}
 			}
 
-			clr = Color.yellow;
+			clr = _fire;
 
 			var fires = PLNetworkManager.Instance.ViewedPawn.CurrentShip?.AllFires;
 			if (fires != null)
@@ -305,15 +348,14 @@ namespace LevelScanner
 				if (fire == null) continue;
 
 				var vec = scannerTransform.InverseTransformPoint(fire.transform.position);
-				var y = vec.y;
-				clr.a = fire.Intensity;
+				clr.a = GetAlpha(vec.y);
 				GL.Color(clr);
 				GL.Vertex(new Vector3(vec.x, vec.z + 3) * zoom);
 				GL.Vertex(new Vector3(vec.x + 3, vec.z) * zoom);
 				GL.Vertex(new Vector3(vec.x - 3, vec.z) * zoom);
 			}
 
-			clr = Color.red;
+			clr = _hostile;
 
 			for (int i = 0; i < PLGameStatic.Instance.AllPawnBases.Count; i++)
 			{
@@ -324,7 +366,7 @@ namespace LevelScanner
 					var y = vec.y;
 					if (pawn.GetIsFriendly())
 					{
-						var green = Color.green;
+						var green = _crew;
 						//green.a = GetAlpha(y);
 						GL.Color(green);
 						GL.Vertex(new Vector3(vec.x, vec.z + 3) * zoom);

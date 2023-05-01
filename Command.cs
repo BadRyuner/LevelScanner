@@ -19,6 +19,7 @@ namespace LevelScanner
 		public override void Execute(string arguments)
 		{
 			NewScanner.ShowInterior.Value = !NewScanner.ShowInterior.Value;
+			NewScanner.meshes.Clear();
 		}
 	}
 }
