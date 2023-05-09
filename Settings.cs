@@ -50,6 +50,9 @@ namespace LevelScanner
 			EndHorizontal();
 
 			Space(2f);
+			NewScanner.ShowInterior.Value = Toggle(NewScanner.ShowInterior.Value, "Show Interior");
+
+			Space(2f);
 			if (Button("Apply"))
 				UpdateColor();
 		}

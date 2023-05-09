@@ -17,7 +17,7 @@ namespace LevelScanner
 		internal static NewScanner Instance;
 
 		public static PLPawnItem_Scanner ActiveScanner;
-		public static Dictionary<int /* hub id */, Vector3[][]> meshes = new Dictionary<int, Vector3[][]>();
+		public static Dictionary<PLTeleportationLocationInstance /* hub id */, Vector3[][]> meshes = new Dictionary<PLTeleportationLocationInstance, Vector3[][]>();
 
 		public static SaveValue<bool> ShowInterior = new SaveValue<bool>("ShowInterior", false);
 
@@ -81,7 +81,7 @@ namespace LevelScanner
 			if (PLNetworkManager.Instance?.ViewedPawn != null)
 			{
 				PawnY = PLNetworkManager.Instance.ViewedPawn.transform.position.y;
-				if (ShowInterior.Value && !meshes.ContainsKey(PLNetworkManager.Instance.LocalPlayer.SubHubID))
+				if (ShowInterior.Value && !meshes.ContainsKey(PLNetworkManager.Instance.LocalPlayer.MyCurrentTLI))
 				{
 					MeshCollider[] targets;
 					var shipinfo = PLNetworkManager.Instance.LocalPlayer.MyCurrentTLI.MyShipInfo;
@@ -102,7 +102,7 @@ namespace LevelScanner
 					else
 					{
 						PulsarModLoader.Utilities.Messaging.Notification($"Bad level - {PLNetworkManager.Instance.LocalPlayer.SubHubID}");
-						meshes.Add(PLNetworkManager.Instance.LocalPlayer.SubHubID, new Vector3[0][]);
+						meshes.Add(PLNetworkManager.Instance.LocalPlayer.MyCurrentTLI, new Vector3[0][]);
 						return;
 					}
 
@@ -110,7 +110,15 @@ namespace LevelScanner
 					int count = 0;
 					foreach (var v in targets)
 					{
-						var verts = v.sharedMesh.vertices;
+						var verts = v.sharedMesh?.vertices;
+						if (verts == null)
+						{
+							//PulsarModLoader.Utilities.Logger.Info("NULL");
+							vectors[count] = Array.Empty<Vector3>();
+							count++;
+							continue;
+						}
+
 						Vector3[] vecs = new Vector3[verts.Length];
 
 						for(int i = 0; i < verts.Length; i++)
@@ -122,7 +130,7 @@ namespace LevelScanner
 						count++;
 					}
 
-					meshes.Add(PLNetworkManager.Instance.LocalPlayer.SubHubID, vectors);
+					meshes.Add(PLNetworkManager.Instance.LocalPlayer.MyCurrentTLI, vectors);
 				}
 			}
 		}
@@ -144,23 +152,24 @@ namespace LevelScanner
 
 				GL.Color(_interior);
 
-				if (meshes.TryGetValue(PLNetworkManager.Instance.LocalPlayer.SubHubID, out var floor))
+				if (meshes.TryGetValue(PLNetworkManager.Instance.LocalPlayer.MyCurrentTLI, out var floor))
 				{
 					for (int i = 0; i < floor.Length; i++)
 					{
 						var obj = floor[i];
 						if (obj.Length == 0) continue;
-						var last = obj[0];
+						var last = scannerTransform.InverseTransformPoint(obj[0]); // haha, phahtom points go brrrrr
+						if (new Vector2(last.x, last.z).sqrMagnitude > 9000f) continue; // is this works???
 						for (int x = 1; x < obj.Length; x++)
 						{
 							var in3d = obj[x];
-							if (Mathf.Abs(in3d.y - PawnY) > 1.6f)
+							if (Mathf.Abs(in3d.y - PawnY) > 3f) // old - 1.6f
 							{
 								last.y = 0;
 								continue;
 							}
 							var now = scannerTransform.InverseTransformPoint(in3d);
-							if (last.y == 0) 
+							if (last.y == 0)
 							{
 								last = now;
 								continue;
